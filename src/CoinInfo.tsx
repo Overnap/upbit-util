@@ -9,7 +9,7 @@ export const CoinInfo: React.FC<Props> = (props: Props) => {
     const [chart, toggleChart] = useState(false);
 
     return (
-        <div className="relative rounded-lg bg-white shadow max-w-max">
+        <div className="relative rounded-lg bg-white shadow overflow-x-auto">
             <div className="flex items-center px-4 py-3 space-x-8 justify-between">
                 <div className="text-sx font-bold text-gray-800 w-28">{props.id}</div>
                 <div className="text-sm text-gray-800 w-24 text-right">{props.data?.tp} ₩</div>
