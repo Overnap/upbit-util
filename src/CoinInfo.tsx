@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Map } from "immutable";
 
 interface Props {
     data: any,
@@ -12,13 +13,13 @@ export const CoinInfo: React.FC<Props> = (props: Props) => {
         <div className="relative rounded-lg bg-white shadow overflow-x-auto">
             <div className="flex items-center px-4 py-3 space-x-8 justify-between">
                 <div className="text-sx font-bold text-gray-800 w-28">{props.id}</div>
-                <div className="text-sm text-gray-800 w-24 text-right">{props.data?.tp} ₩</div>
-                <div className={`text-sm ${props.data?.c == 'RISE' ? "text-red-500" : "text-blue-600"}
+                <div className="text-sm text-gray-800 w-24 text-right">{props.data.get("tp")} ₩</div>
+                <div className={`text-sm ${props.data.get("c") === "RISE" ? "text-red-500" : "text-blue-600"}
                         w-20 text-right`}>
-                    {(Math.round(props.data?.scr.toFixed(4) * 10000) / 100).toFixed(2) + "%"}
+                    {(Math.round(props.data.get("scr").toFixed(4) * 10000) / 100).toFixed(2) + "%"}
                 </div>
                 <div className="text-sm text-gray-800 w-20 text-right">
-                    {Math.round(props.data?.atp24h / 1000000000)} B₩
+                    {Math.round(props.data.get("atp24h") / 1000000000)} B₩
                 </div>
                 <button className="text-gray-400 active:text-gray-800 text-sx
                             outline-none focus:outline-none ease-linear transition-all duration-100"

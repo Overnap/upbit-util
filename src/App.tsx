@@ -1,19 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { Map, List } from 'immutable'
 import './App.css';
 import { UserKey } from './UserKey';
 import { CoinInfo } from './CoinInfo';
 import { CoinHeader } from './CoinHeader';
 
-interface Tickers {
-  [name: string]: any
-}
-
 const App: React.FC = () => {
   const priceWS = useRef<WebSocket | null>(null);
   const sortBy = useRef("cd");
   const sortOrder = useRef(false); // false: inc, true: dec
-  const [ tickers, setTickers ] = useState<Tickers>({});
-  const [ ordered, setOrdered ] = useState<string[]>([]);
+  const [ tickers, setTickers ] = useState({data: Map<string, Map<string, any>>()});
+  const [ ordered, setOrdered ] = useState({data: List<string>()});
 
   useEffect(() => {
     priceWS.current = new WebSocket("wss://api.upbit.com/websocket/v1");
@@ -27,11 +24,21 @@ const App: React.FC = () => {
 
     priceWS.current.onmessage = (e: MessageEvent) => {
       e.data.text().then((result: string) => {
-        const data = JSON.parse(result);
-        setTickers(prevTickers => { return {...prevTickers, [data.cd]: data} });
-        if (!ordered.includes(data.cd)) {
-          ordered.push(data.cd);
-        }
+        const parsed = JSON.parse(result);
+        setTickers(prevTickers => {
+          if (prevTickers.data.has(parsed.cd)) {
+            return { data: prevTickers.data.mergeDeepIn([parsed.cd], parsed) };
+          } else {
+            return { data: prevTickers.data.set(parsed.cd, Map(parsed)) };
+          }
+        });
+        setOrdered(prevOrdered => {
+          if (!prevOrdered.data.includes(parsed.cd)) {
+            return {data: prevOrdered.data.push(parsed.cd)};
+          } else {
+            return prevOrdered;
+          }
+        });
       });
     };
 
@@ -53,13 +60,14 @@ const App: React.FC = () => {
       sortOrder.current = false;
     }
 
-    ordered.sort((a: string, b: string) => {
+    ordered.data.sort((a: string, b: string) => {
       let result;
 
       if (sortBy.current === "cd") {
         result = -a.localeCompare(b);
       } else {
-        result = tickers[a][sortBy.current] - tickers[b][sortBy.current];
+        console.log(tickers.data.get(a)?.get(sortBy.current));
+        result = tickers.data.get(a)?.get(sortBy.current) - tickers.data.get(b)?.get(sortBy.current);
       }
 
       if (sortOrder.current === true) {
@@ -78,7 +86,7 @@ const App: React.FC = () => {
           <div className="ml-3 mb-2 font-bold text-2xl">업비트 유틸리티</div>
           <UserKey connect={apiConnection}></UserKey>
           <CoinHeader sortBy={sortBy.current} updateSort={updateSort}></CoinHeader>
-          {ordered.map((id: string) => (<CoinInfo key={id} id={id} data={tickers[id]}></CoinInfo>))}
+          {ordered.data.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data.get(id)}></CoinInfo>))}
         </div>
       </div>
     </div>
