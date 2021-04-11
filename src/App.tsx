@@ -10,7 +10,7 @@ const App: React.FC = () => {
   const sortBy = useRef("cd");
   const sortOrder = useRef(false); // false: inc, true: dec
   const [ tickers, setTickers ] = useState({data: Map<string, Map<string, any>>()});
-  const [ ordered, setOrdered ] = useState({data: List<string>()});
+  const [ ordered, setOrdered ] = useState<string[]>([]);
 
   useEffect(() => {
     priceWS.current = new WebSocket("wss://api.upbit.com/websocket/v1");
@@ -33,11 +33,10 @@ const App: React.FC = () => {
           }
         });
         setOrdered(prevOrdered => {
-          if (!prevOrdered.data.includes(parsed.cd)) {
-            return {data: prevOrdered.data.push(parsed.cd)};
-          } else {
-            return prevOrdered;
+          if (!prevOrdered.includes(parsed.cd)) {
+            prevOrdered.push(parsed.cd);
           }
+          return prevOrdered;
         });
       });
     };
@@ -60,22 +59,20 @@ const App: React.FC = () => {
       sortOrder.current = false;
     }
 
-    setOrdered(prevOrdered => {
-      return { data: prevOrdered.data.sort((a: string, b: string) => {
-        let result;
+    ordered.sort((a: string, b: string) => {
+      let result;
 
-        if (sortBy.current === "cd") {
-          result = -a.localeCompare(b);
-        } else {
-          result = tickers.data.get(a)?.get(sortBy.current) - tickers.data.get(b)?.get(sortBy.current);
-        }
+      if (sortBy.current === "cd") {
+        result = -a.localeCompare(b);
+      } else {
+        result = tickers.data.get(a)?.get(sortBy.current) - tickers.data.get(b)?.get(sortBy.current);
+      }
 
-        if (sortOrder.current === true) {
-          return result;
-        } else {
-          return -result;
-        }
-      }) };
+      if (sortOrder.current === true) {
+        return result;
+      } else {
+        return -result;
+      }
     });
   }
 
@@ -87,7 +84,7 @@ const App: React.FC = () => {
           <div className="ml-3 mb-2 font-bold text-2xl">업비트 유틸리티</div>
           <UserKey connect={apiConnection}></UserKey>
           <CoinHeader sortBy={sortBy.current} updateSort={updateSort}></CoinHeader>
-          {ordered.data.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data.get(id)}></CoinInfo>))}
+          {ordered.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data.get(id)}></CoinInfo>))}
         </div>
       </div>
     </div>
