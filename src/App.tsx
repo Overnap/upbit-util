@@ -16,16 +16,15 @@ const App: React.FC = () => {
 
     priceWS.current.onopen = () => {
       console.log("price websocket connected.");
-      priceWS.current?.send(`[{"ticket":"tgang"},{"type":"ticker","codes":["KRW-BTC"]},{"format":"SIMPLE"}]`);
+      priceWS.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
+                            ["KRW-BTC", "KRW-DOGE", "KRW-KMD"]},
+                            {"format":"SIMPLE"}]`);
     }
 
     priceWS.current.onmessage = (e: MessageEvent) => {
       e.data.text().then((result: string) => {
         const data = JSON.parse(result);
-        setTickers({
-          ...tickers,
-          [data.cd]: data
-        });
+        setTickers(prevTickers => { return {...prevTickers, [data.cd]: data} });
       });
     };
 
@@ -41,9 +40,11 @@ const App: React.FC = () => {
 
   return (
     <div className="m-20">
-      <header>
+      <header className="flex flex-col space-y-3">
         <UserKey connect={apiConnection}></UserKey>
         <CoinInfo id="KRW-BTC" data={tickers["KRW-BTC"]}></CoinInfo>
+        <CoinInfo id="KRW-DOGE" data={tickers["KRW-DOGE"]}></CoinInfo>
+        <CoinInfo id="KRW-KMD" data={tickers["KRW-KMD"]}></CoinInfo>
       </header>
     </div>
   );
