@@ -10,8 +10,10 @@ interface Tickers {
 
 const App: React.FC = () => {
   const priceWS = useRef<WebSocket | null>(null);
+  const sortBy = useRef("cd");
+  const sortOrder = useRef(false); // false: inc, true: dec
   const [ tickers, setTickers ] = useState<Tickers>({});
-  const [ sortby, setSortby ] = useState("");
+  const [ ordered, setOrdered ] = useState<string[]>([]);
 
   useEffect(() => {
     priceWS.current = new WebSocket("wss://api.upbit.com/websocket/v1");
@@ -27,6 +29,9 @@ const App: React.FC = () => {
       e.data.text().then((result: string) => {
         const data = JSON.parse(result);
         setTickers(prevTickers => { return {...prevTickers, [data.cd]: data} });
+        if (!ordered.includes(data.cd)) {
+          ordered.push(data.cd);
+        }
       });
     };
 
@@ -40,6 +45,33 @@ const App: React.FC = () => {
     console.log(secretKey);
   };
 
+  const updateSort = (newSortBy: string) => {
+    if (sortBy.current === newSortBy) {
+      sortOrder.current = !sortOrder.current;
+    } else {
+      sortBy.current = newSortBy;
+      sortOrder.current = false;
+    }
+
+    ordered.sort((a: string, b: string) => {
+      let result;
+
+      if (sortBy.current === "cd") {
+        result = a.localeCompare(b);
+      } else {
+        result = tickers[a][sortBy.current] - tickers[b][sortBy.current];
+      }
+
+      if (sortOrder.current === true) {
+        return result;
+      } else {
+        return -result;
+      }
+    });
+
+    console.log(ordered);
+  }
+
   return (
     <div className="flex justify-center">
       {/* main body */}
@@ -47,13 +79,8 @@ const App: React.FC = () => {
         <div className="flex flex-col space-y-3 m-10">
           <div className="ml-3 mb-2 font-bold text-2xl">업비트 유틸리티</div>
           <UserKey connect={apiConnection}></UserKey>
-          <CoinHeader sortby={sortby} setSortby={setSortby}></CoinHeader>
-          <CoinInfo id="KRW-BTC" data={tickers["KRW-BTC"]}></CoinInfo>
-          <CoinInfo id="KRW-DOGE" data={tickers["KRW-DOGE"]}></CoinInfo>
-          <CoinInfo id="KRW-KMD" data={tickers["KRW-KMD"]}></CoinInfo>
-          <CoinInfo id="KRW-SNT" data={tickers["KRW-SNT"]}></CoinInfo>
-          <CoinInfo id="KRW-XRP" data={tickers["KRW-XRP"]}></CoinInfo>
-          <CoinInfo id="KRW-XLM" data={tickers["KRW-XLM"]}></CoinInfo>
+          <CoinHeader sortBy={sortBy.current} updateSort={updateSort}></CoinHeader>
+          {ordered.map((id: string) => (<CoinInfo key={id} id={id} data={tickers[id]}></CoinInfo>))}
         </div>
       </div>
     </div>
