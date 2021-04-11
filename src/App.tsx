@@ -1,23 +1,50 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useEffect, useState, useRef } from 'react';
 import './App.css';
+import { UserKey } from './UserKey';
+import { CoinInfo } from './CoinInfo'
 
-function App() {
+interface Tickers {
+  [name: string]: any
+}
+
+const App = () => {
+  const priceWS = useRef<WebSocket | null>(null);
+  const [ tickers, setTickers ] = useState<Tickers>({});
+
+  useEffect(() => {
+    priceWS.current = new WebSocket("wss://api.upbit.com/websocket/v1");
+
+    priceWS.current.onopen = () => {
+      console.log("price websocket connected.");
+      priceWS.current?.send(`[{"ticket":"tgang"},{"type":"ticker","codes":["KRW-BTC"]},{"format":"SIMPLE"}]`);
+    }
+
+    priceWS.current.onmessage = (e: MessageEvent) => {
+      e.data.text().then((result: string) => {
+        const data = JSON.parse(result);
+        setTickers({
+          ...tickers,
+          [data.cd]: data
+        });
+        console.log(tickers[data.cd]);
+      });
+    };
+
+    return () => {
+      priceWS.current?.close();
+    }
+  }, []);
+
+  const apiConnection = (accessKey: string, secretKey: string) => {
+    console.log(accessKey);
+    console.log(secretKey);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        <UserKey connect={apiConnection}></UserKey>
+        <CoinInfo id="KRW-BTC" data={tickers['KRW-BTC']}></CoinInfo>
       </header>
     </div>
   );
