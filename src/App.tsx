@@ -7,7 +7,7 @@ interface Tickers {
   [name: string]: any
 }
 
-const App = () => {
+const App: React.FC = () => {
   const priceWS = useRef<WebSocket | null>(null);
   const [ tickers, setTickers ] = useState<Tickers>({});
 
@@ -26,7 +26,6 @@ const App = () => {
           ...tickers,
           [data.cd]: data
         });
-        console.log(tickers[data.cd]);
       });
     };
 
@@ -41,10 +40,10 @@ const App = () => {
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
+    <div className="m-20">
+      <header>
         <UserKey connect={apiConnection}></UserKey>
-        <CoinInfo id="KRW-BTC" data={tickers['KRW-BTC']}></CoinInfo>
+        <CoinInfo id="KRW-BTC" data={tickers["KRW-BTC"]}></CoinInfo>
       </header>
     </div>
   );
