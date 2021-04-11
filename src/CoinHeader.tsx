@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 
 interface Props {
     sortBy: string,
@@ -29,7 +29,9 @@ export const CoinHeader: React.FC<Props> = (props: Props) => {
                         w-20 hover:text-gray-600 outline-none focus:outline-none
                         ease-linear transition-all`}
                         onClick={() => props.updateSort("atp24h")}>거래대금</button>
-                <button className="w-3"></button>
+                <button className="text-sm text-right text-gray-400
+                        w-3 hover:text-gray-600 outline-none focus:outline-none
+                        ease-linear transition-all">…</button>
             </div>
         </div>
     );
