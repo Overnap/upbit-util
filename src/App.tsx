@@ -60,21 +60,22 @@ const App: React.FC = () => {
       sortOrder.current = false;
     }
 
-    ordered.data.sort((a: string, b: string) => {
-      let result;
+    setOrdered(prevOrdered => {
+      return { data: prevOrdered.data.sort((a: string, b: string) => {
+        let result;
 
-      if (sortBy.current === "cd") {
-        result = -a.localeCompare(b);
-      } else {
-        console.log(tickers.data.get(a)?.get(sortBy.current));
-        result = tickers.data.get(a)?.get(sortBy.current) - tickers.data.get(b)?.get(sortBy.current);
-      }
+        if (sortBy.current === "cd") {
+          result = -a.localeCompare(b);
+        } else {
+          result = tickers.data.get(a)?.get(sortBy.current) - tickers.data.get(b)?.get(sortBy.current);
+        }
 
-      if (sortOrder.current === true) {
-        return result;
-      } else {
-        return -result;
-      }
+        if (sortOrder.current === true) {
+          return result;
+        } else {
+          return -result;
+        }
+      }) };
     });
   }
 
