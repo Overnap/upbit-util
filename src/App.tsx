@@ -57,7 +57,7 @@ const App: React.FC = () => {
       let result;
 
       if (sortBy.current === "cd") {
-        result = a.localeCompare(b);
+        result = -a.localeCompare(b);
       } else {
         result = tickers[a][sortBy.current] - tickers[b][sortBy.current];
       }
@@ -68,8 +68,6 @@ const App: React.FC = () => {
         return -result;
       }
     });
-
-    console.log(ordered);
   }
 
   return (
