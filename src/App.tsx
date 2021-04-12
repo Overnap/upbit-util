@@ -5,11 +5,13 @@ import { UserKey } from './UserKey';
 import { CoinInfo } from './CoinInfo';
 import { CoinHeader } from './CoinHeader';
 import { idText } from 'typescript';
+import { stringify } from 'postcss';
 
 const App: React.FC = () => {
   const wsPrice = useRef<WebSocket | null>(null);
   const sortBy = useRef("cd");
   const sortOrder = useRef(false); // false: inc, true: dec
+  const willUpdate = useRef<number>(0); // index of a market will be updated in unsorted
   const unsorted = useRef<string[]>([]);
   const [ tickers, setTickers ] = useState({data: Map<string, Map<string, any>>()});
   // TODO: 빌트인 Array가 더 빠를줄 알았는데 List가 더 빠른 느낌... 정확한 확인 필요
@@ -32,7 +34,14 @@ const App: React.FC = () => {
           if (prevTickers.data.has(parsed.cd)) {
             return { data: prevTickers.data.mergeDeepIn([parsed.cd], parsed) };
           } else {
-            return { data: prevTickers.data.set(parsed.cd, Map({...parsed, tci:Map<string, any>()})) };
+            return {
+              data: prevTickers.data.set(parsed.cd, Map(parsed))
+              .setIn([parsed.cd, "candle"], Map({
+                "5m": [], "30m": [], "4h": [], "1d": []
+              })).setIn([parsed.cd, "indicator"], Map({
+                "rsi": 0, 
+              }))
+            };
           }
         });
         if (!unsorted.current.includes(parsed.cd)) {
@@ -48,8 +57,51 @@ const App: React.FC = () => {
       });
     };
 
+    const interval = setInterval(() => {
+      if (unsorted.current.length === willUpdate.current) {
+        willUpdate.current -= unsorted.current.length;
+      } else {
+        fetch('https://api.upbit.com/v1/candles/minutes/5?market=KRW-BTC&count=100')
+        .then((response) => {
+          response.json().then((parsed) => {
+            setTickers(prevTickers => { return {
+              data: prevTickers.data.setIn([unsorted.current[willUpdate.current], "candle", "5m"], parsed)
+            }});
+          })
+        }).catch(e => console.log(e));
+        fetch('https://api.upbit.com/v1/candles/minutes/30?market=KRW-BTC&count=100')
+        .then((response) => {
+          response.json().then((parsed) => {
+            setTickers(prevTickers => { return {
+              data: prevTickers.data.setIn([unsorted.current[willUpdate.current], "candle", "30m"], parsed)
+            }});
+          })
+        }).catch(e => console.log(e));
+        fetch('https://api.upbit.com/v1/candles/minutes/240?market=KRW-BTC&count=100')
+        .then((response) => {
+          response.json().then((parsed) => {
+            setTickers(prevTickers => { return {
+              data: prevTickers.data.setIn([unsorted.current[willUpdate.current], "candle", "4h"], parsed)
+            }});
+          })
+        }).catch(e => console.log(e));
+        fetch('https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=100')
+        .then((response) => {
+          response.json().then((parsed) => {
+            setTickers(prevTickers => { return {
+              data: prevTickers.data.setIn([unsorted.current[willUpdate.current], "candle", "1d"], parsed)
+            }});
+          })
+        }).catch(e => console.log(e));
+
+        console.log(tickers.data.get(unsorted.current[willUpdate.current])?.get("candle").get("30m"));
+        willUpdate.current += 1;
+      }
+    }, 1000);
+
     return () => {
       wsPrice.current?.close();
+      clearInterval(interval);
     }
   }, []);
 
@@ -93,7 +145,7 @@ const App: React.FC = () => {
           <div className="ml-3 mb-2 font-bold text-2xl">업비트 유틸리티</div>
           <UserKey connect={apiConnection}></UserKey>
           <CoinHeader sortBy={sortBy.current} updateSort={updateSort}></CoinHeader>
-          {sorted.data.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data.get(id)}></CoinInfo>))}
+          {sorted.data.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data?.get(id)}></CoinInfo>))}
         </div>
       </div>
     </div>
