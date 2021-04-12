@@ -4,47 +4,52 @@ import './App.css';
 import { UserKey } from './UserKey';
 import { CoinInfo } from './CoinInfo';
 import { CoinHeader } from './CoinHeader';
+import { idText } from 'typescript';
 
 const App: React.FC = () => {
-  const priceWS = useRef<WebSocket | null>(null);
+  const wsPrice = useRef<WebSocket | null>(null);
   const sortBy = useRef("cd");
   const sortOrder = useRef(false); // false: inc, true: dec
+  const unsorted = useRef<string[]>([]);
   const [ tickers, setTickers ] = useState({data: Map<string, Map<string, any>>()});
   // TODO: 빌트인 Array가 더 빠를줄 알았는데 List가 더 빠른 느낌... 정확한 확인 필요
-  const [ ordered, setOrdered ] = useState({data: List<string>()});
+  const [ sorted, setSorted ] = useState({data: List<string>()});
 
   useEffect(() => {
-    priceWS.current = new WebSocket("wss://api.upbit.com/websocket/v1");
+    wsPrice.current = new WebSocket("wss://api.upbit.com/websocket/v1");
 
-    priceWS.current.onopen = () => {
+    wsPrice.current.onopen = () => {
       console.log("price websocket connected.");
-      priceWS.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
+      wsPrice.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
                             ["KRW-BTC", "KRW-DOGE", "KRW-KMD", "KRW-SNT", "KRW-XRP", "KRW-XLM"]},
                             {"format":"SIMPLE"}]`);
     }
 
-    priceWS.current.onmessage = (e: MessageEvent) => {
+    wsPrice.current.onmessage = (e: MessageEvent) => {
       e.data.text().then((result: string) => {
         const parsed = JSON.parse(result);
         setTickers(prevTickers => {
           if (prevTickers.data.has(parsed.cd)) {
             return { data: prevTickers.data.mergeDeepIn([parsed.cd], parsed) };
           } else {
-            return { data: prevTickers.data.set(parsed.cd, Map(parsed)) };
+            return { data: prevTickers.data.set(parsed.cd, Map({...parsed, tci:Map<string, any>()})) };
           }
         });
-        setOrdered(prevOrdered => {
-          if (!prevOrdered.data.includes(parsed.cd)) {
-            return {data: prevOrdered.data.push(parsed.cd)};
-          } else {
-            return prevOrdered;
-          }
-        });
+        if (!unsorted.current.includes(parsed.cd)) {
+          unsorted.current.push(parsed.cd);
+          setSorted(prevSorted => {
+            if (!prevSorted.data.includes(parsed.cd)) {
+              return {data: prevSorted.data.push(parsed.cd)};
+            } else {
+              return prevSorted;
+            }
+          });
+        }
       });
     };
 
     return () => {
-      priceWS.current?.close();
+      wsPrice.current?.close();
     }
   }, []);
 
@@ -61,8 +66,8 @@ const App: React.FC = () => {
       sortOrder.current = false;
     }
 
-    setOrdered(prevOrdered => {
-      return { data: prevOrdered.data.sort((a: string, b: string) => {
+    setSorted(prevSorted => {
+      return { data: prevSorted.data.sort((a: string, b: string) => {
         let result;
 
         if (sortBy.current === "cd") {
@@ -88,7 +93,7 @@ const App: React.FC = () => {
           <div className="ml-3 mb-2 font-bold text-2xl">업비트 유틸리티</div>
           <UserKey connect={apiConnection}></UserKey>
           <CoinHeader sortBy={sortBy.current} updateSort={updateSort}></CoinHeader>
-          {ordered.data.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data.get(id)}></CoinInfo>))}
+          {sorted.data.map((id: string) => (<CoinInfo key={id} id={id} data={tickers.data.get(id)}></CoinInfo>))}
         </div>
       </div>
     </div>
