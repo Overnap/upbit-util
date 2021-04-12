@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Map } from "immutable";
 
 interface Props {
     data: any,

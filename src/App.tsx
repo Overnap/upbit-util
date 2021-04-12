@@ -4,8 +4,6 @@ import './App.css';
 import { UserKey } from './UserKey';
 import { CoinInfo } from './CoinInfo';
 import { CoinHeader } from './CoinHeader';
-import { idText } from 'typescript';
-import { stringify } from 'postcss';
 
 const App: React.FC = () => {
   const wsPrice = useRef<WebSocket | null>(null);
@@ -94,7 +92,6 @@ const App: React.FC = () => {
           })
         }).catch(e => console.log(e));
 
-        console.log(tickers.data.get(unsorted.current[willUpdate.current])?.get("candle").get("30m"));
         willUpdate.current += 1;
       }
     }, 1000);
