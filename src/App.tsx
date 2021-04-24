@@ -8,6 +8,7 @@ import * as CoinMeta from './CoinMeta';
 
 const App: React.FC = () => {
   const wsPrice = useRef<WebSocket | null>(null);
+  const sortDelay = useRef(false); // true: ready to update
   const sortBy = useRef("cd");
   const sortOrder = useRef(false); // false: inc, true: dec
   const willUpdate = useRef<number>(0); // index of a market will be updated in unsorted
@@ -21,7 +22,7 @@ const App: React.FC = () => {
 
     wsPrice.current.onopen = () => {
       console.log("price websocket connected.");
-      wsPrice.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
+      wsPrice.current?.send(`[{"ticket":"opening"},{"type":"ticker","codes":
                             ${JSON.stringify(CoinMeta.codes)}, "isOnlySnapshot":"true"},
                             {"format":"SIMPLE"}]`);
     }
@@ -29,11 +30,6 @@ const App: React.FC = () => {
     wsPrice.current.onmessage = (e: MessageEvent) => {
       e.data.text().then((result: string) => {
         const parsed = JSON.parse(result);
-        if (parsed.cd === undefined) {
-          console.log("WTF");
-        } else {
-          console.log("get " + parsed.cd);
-        }
         setTickers(prevTickers => {
           if (prevTickers.data.has(parsed.cd)) {
             return { data: prevTickers.data.mergeDeepIn([parsed.cd], parsed) };
@@ -61,7 +57,7 @@ const App: React.FC = () => {
       });
     };
 
-    const interval = setInterval(() => {
+    const candleInterval = setInterval(() => {
       if (unsorted.current.length === willUpdate.current) {
         willUpdate.current -= unsorted.current.length;
       } else {
@@ -114,33 +110,38 @@ const App: React.FC = () => {
             }});
           })
         }).catch(e => console.log(e));
-        wsPrice.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
-                            ["${unsorted.current[willUpdate.current]}"], "isOnlySnapshot":"true"},
-                            {"format":"SIMPLE"}]`);
-        console.log(unsorted.current[willUpdate.current]);
+        console.log("update " + unsorted.current[willUpdate.current]);
         willUpdate.current += 1;
       }
     }, 1000);
 
+    const tickerInterval = setInterval(() => {
+      wsPrice.current?.send(`[{"ticket":"updating"},{"type":"ticker","codes":
+                            ${JSON.stringify(CoinMeta.codes)}, "isOnlySnapshot":"true"},
+                            {"format":"SIMPLE"}]`);
+      console.log("get tickers")
+      sortDelay.current = true;
+    }, 5000);
+
     return () => {
       wsPrice.current?.close();
-      clearInterval(interval);
+      clearInterval(candleInterval);
+      clearInterval(tickerInterval);
     }
   }, []);
+
+  useEffect(() => {
+    if (sortDelay.current === true) {
+      refreshSort();
+    }
+  }, [tickers]);
 
   const apiConnection = (accessKey: string, secretKey: string) => {
     console.log(accessKey);
     console.log(secretKey);
   };
 
-  const updateSort = (newSortBy: string) => {
-    if (sortBy.current === newSortBy) {
-      sortOrder.current = !sortOrder.current;
-    } else {
-      sortBy.current = newSortBy;
-      sortOrder.current = false;
-    }
-
+  const refreshSort = () => {
     setSorted(prevSorted => {
       return { data: prevSorted.data.sort((a: string, b: string) => {
         let result;
@@ -158,6 +159,17 @@ const App: React.FC = () => {
         }
       }) };
     });
+  }
+
+  const updateSort = (newSortBy: string) => {
+    if (sortBy.current === newSortBy) {
+      sortOrder.current = !sortOrder.current;
+    } else {
+      sortBy.current = newSortBy;
+      sortOrder.current = false;
+    }
+
+    refreshSort();
   }
 
   return (
