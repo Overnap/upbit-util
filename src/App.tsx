@@ -35,7 +35,7 @@ const App: React.FC = () => {
             return {
               data: prevTickers.data.set(parsed.cd, Map(parsed))
               .setIn([parsed.cd, "candle"], Map({
-                "5m": [], "30m": [], "4h": [], "1d": []
+                "5m": [], "15m": [], "30m": [], "1h": [], "4h": [], "1d": []
               })).setIn([parsed.cd, "indicator"], Map({
                 "rsi": 0, 
               }))
@@ -59,7 +59,8 @@ const App: React.FC = () => {
       if (unsorted.current.length === willUpdate.current) {
         willUpdate.current -= unsorted.current.length;
       } else {
-        fetch('https://api.upbit.com/v1/candles/minutes/5?market=KRW-BTC&count=100')
+        const candleURL = "https://api.upbit.com/v1/candles/";
+        fetch(candleURL + `minutes/5?market=${unsorted.current[willUpdate.current]}&count=100`)
         .then((response) => {
           response.json().then((parsed) => {
             setTickers(prevTickers => { return {
@@ -67,7 +68,15 @@ const App: React.FC = () => {
             }});
           })
         }).catch(e => console.log(e));
-        fetch('https://api.upbit.com/v1/candles/minutes/30?market=KRW-BTC&count=100')
+        fetch(candleURL + `minutes/15?market=${unsorted.current[willUpdate.current]}&count=100`)
+        .then((response) => {
+          response.json().then((parsed) => {
+            setTickers(prevTickers => { return {
+              data: prevTickers.data.setIn([unsorted.current[willUpdate.current], "candle", "15m"], parsed)
+            }});
+          })
+        }).catch(e => console.log(e));
+        fetch(candleURL + `minutes/30?market=${unsorted.current[willUpdate.current]}&count=100`)
         .then((response) => {
           response.json().then((parsed) => {
             setTickers(prevTickers => { return {
@@ -75,7 +84,15 @@ const App: React.FC = () => {
             }});
           })
         }).catch(e => console.log(e));
-        fetch('https://api.upbit.com/v1/candles/minutes/240?market=KRW-BTC&count=100')
+        fetch(candleURL + `minutes/60?market=${unsorted.current[willUpdate.current]}&count=100`)
+        .then((response) => {
+          response.json().then((parsed) => {
+            setTickers(prevTickers => { return {
+              data: prevTickers.data.setIn([unsorted.current[willUpdate.current], "candle", "1h"], parsed)
+            }});
+          })
+        }).catch(e => console.log(e));
+        fetch(candleURL + `minutes/240?market=${unsorted.current[willUpdate.current]}&count=100`)
         .then((response) => {
           response.json().then((parsed) => {
             setTickers(prevTickers => { return {
@@ -83,7 +100,7 @@ const App: React.FC = () => {
             }});
           })
         }).catch(e => console.log(e));
-        fetch('https://api.upbit.com/v1/candles/days?market=KRW-BTC&count=100')
+        fetch(candleURL + `days?market=${unsorted.current[willUpdate.current]}&count=100`)
         .then((response) => {
           response.json().then((parsed) => {
             setTickers(prevTickers => { return {
@@ -91,7 +108,7 @@ const App: React.FC = () => {
             }});
           })
         }).catch(e => console.log(e));
-
+        console.log(unsorted.current[willUpdate.current]);
         willUpdate.current += 1;
       }
     }, 1000);
