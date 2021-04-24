@@ -4,6 +4,7 @@ import './App.css';
 import { UserKey } from './UserKey';
 import { CoinInfo } from './CoinInfo';
 import { CoinHeader } from './CoinHeader';
+import * as CoinMeta from './CoinMeta';
 
 const App: React.FC = () => {
   const wsPrice = useRef<WebSocket | null>(null);
@@ -21,13 +22,18 @@ const App: React.FC = () => {
     wsPrice.current.onopen = () => {
       console.log("price websocket connected.");
       wsPrice.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
-                            ["KRW-BTC", "KRW-DOGE", "KRW-KMD", "KRW-SNT", "KRW-XRP", "KRW-XLM"]},
+                            ${JSON.stringify(CoinMeta.codes)}, "isOnlySnapshot":"true"},
                             {"format":"SIMPLE"}]`);
     }
 
     wsPrice.current.onmessage = (e: MessageEvent) => {
       e.data.text().then((result: string) => {
         const parsed = JSON.parse(result);
+        if (parsed.cd === undefined) {
+          console.log("WTF");
+        } else {
+          console.log("get " + parsed.cd);
+        }
         setTickers(prevTickers => {
           if (prevTickers.data.has(parsed.cd)) {
             return { data: prevTickers.data.mergeDeepIn([parsed.cd], parsed) };
@@ -108,6 +114,9 @@ const App: React.FC = () => {
             }});
           })
         }).catch(e => console.log(e));
+        wsPrice.current?.send(`[{"ticket":"tgsdfng"},{"type":"ticker","codes":
+                            ["${unsorted.current[willUpdate.current]}"], "isOnlySnapshot":"true"},
+                            {"format":"SIMPLE"}]`);
         console.log(unsorted.current[willUpdate.current]);
         willUpdate.current += 1;
       }
